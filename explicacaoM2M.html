@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guia de Análise de Linha M2M</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; padding: 20px; }
+    .section-title { color: #0d6efd; margin-bottom: 20px; font-weight: 600; }
+    .card { border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 25px; }
+    .card-header { font-weight: 600; background-color: #f8f9fa; }
+    .table th, .table td { vertical-align: middle; }
+    .alert-normal { background-color: #d1e7dd; color: #0f5132; border-radius: 8px; padding: 10px; }
+    .alert-problem { background-color: #f8d7da; color: #842029; border-radius: 8px; padding: 10px; }
+    .flex-row { display: flex; flex-wrap: wrap; gap: 20px; }
+    .flex-col { flex: 1; min-width: 300px; }
+    h5 { margin-top: 15px; }
+
+    
+#titulo {
+    border-radius: 12px; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+    margin-top: 25px; 
+    margin-bottom: 25px; 
+    background-color: #0d6efd; 
+    padding: 10px;
+
+    display: flex;           /* ativa flexbox */
+    justify-content: center; /* centraliza horizontalmente */
+    align-items: center;     /* centraliza verticalmente, útil se tiver altura definida */
+    text-align: center;      /* garante que multi-linhas fiquem centralizadas */
+    color: white;            /* cor do texto */
+}
+
+#titulo,conteudotexto{
+    text-align: center;
+    justify-content: center;
+} 
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="titulo">
+    <h1 class="text-center mb-5" id="conteudotexto">Guia de Análise de Histórico de Linha M2M</h1>
+    </div>
+    <!-- Interpretação prática -->
+    <div class="card p-4">
+      <div class="card-header"><i class="bi bi-info-circle"></i> Interpretação Prática</div>
+      <div class="card-body">
+        <p>O equipamento geralmente abre a sessão, envia dados e encerra logo em seguida para economizar bateria e tráfego.</p>
+        <ul>
+          <li><strong>User-Request:</strong> dispositivo encerrou sessão (2G/3G).</li>
+          <li><strong>NAS-Request:</strong> dispositivo encerrou sessão (4G/LTE).</li>
+          <li><strong>Idle-Timeout:</strong> sessão encerrada por inatividade.</li>
+          <li><strong>Stale-Session:</strong> sessão caiu fora do padrão.</li>
+          <li><strong>Operator-Request / Lost-Carrier:</strong> problema de rede.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Tabela de motivos -->
+    <div class="card p-4">
+      <div class="card-header"><i class="bi bi-list-columns"></i> Motivos de Encerramento de Sessão</div>
+      <div class="card-body table-responsive">
+        <table class="table table-bordered table-hover align-middle">
+          <thead class="table-primary">
+            <tr>
+              <th>Motivo</th>
+              <th>O que significa</th>
+              <th>Causa mais comum</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>User-Request</td>
+              <td>O próprio dispositivo solicitou o término da sessão (2G/3G).</td>
+              <td>Rastreadores configurados para abrir sessão, enviar pacote e encerrar (economia de energia/dados).</td>
+            </tr>
+            <tr>
+              <td>NAS-Request</td>
+              <td>O dispositivo solicitou encerrar a sessão via protocolo NAS (LTE/4G).</td>
+              <td>Rastreadores LTE/4G que liberam explicitamente o contexto de dados.</td>
+            </tr>
+            <tr>
+              <td>Idle-Timeout</td>
+              <td>Sessão finalizada por inatividade.</td>
+              <td>Dispositivo parou de enviar dados, operadora encerrou.</td>
+            </tr>
+            <tr>
+              <td>Stale-Session</td>
+              <td>Sessão considerada 'obsoleta' ou inválida pela rede.</td>
+              <td>Queda de sinal ou sessão não finalizada corretamente.</td>
+            </tr>
+            <tr>
+              <td>Operator-Request</td>
+              <td>Encerrada pela operadora.</td>
+              <td>Mudança de célula ou ajuste interno da rede.</td>
+            </tr>
+            <tr>
+              <td>Lost-Carrier</td>
+              <td>Portadora perdida.</td>
+              <td>Falha de cobertura ou deslocamento em área sem sinal.</td>
+            </tr>
+            <tr>
+              <td>Admin-Reset</td>
+              <td>Reset administrativo pelo sistema/operadora.</td>
+              <td>Reautenticação, atualização de perfil ou reset remoto.</td>
+            </tr>
+            <tr>
+              <td>Reauth-Failure</td>
+              <td>Falha de autenticação durante renovação da sessão.</td>
+              <td>Problema de APN, chip bloqueado, erro no SIM Toolkit.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Exemplos de sessões -->
+    <div class="card p-4">
+      <div class="card-header"><i class="bi bi-clock-history"></i> Exemplos de Sessões Ideais</div>
+      <div class="card-body">
+        <h5>Exemplo de Sessão Longa</h5>
+        <div class="table-responsive mb-4">
+          <table class="table table-bordered table-success align-middle">
+            <thead>
+              <tr>
+                <th>Início</th><th>Término</th><th>Duração</th><th>Rede</th><th>Motivo</th>
+                <th>Upload</th><th>Download</th><th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>31/08/2025 08:00</td><td>31/08/2025 18:00</td><td>10h, 00m</td><td>Vivo 4G</td>
+                <td>Idle-Timeout</td><td>5 KB</td><td>4 KB</td><td>9 KB</td>
+              </tr>
+              <tr>
+                <td>31/08/2025 18:01</td><td>31/08/2025 23:59</td><td>5h, 58m</td><td>Vivo 4G</td>
+                <td>User-Request</td><td>4 KB</td><td>3 KB</td><td>7 KB</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h5>Exemplo de Sessão Curta</h5>
+        <div class="table-responsive mb-4">
+          <table class="table table-bordered table-warning align-middle">
+            <thead>
+              <tr>
+                <th>Início</th><th>Término</th><th>Duração</th><th>Rede</th><th>Motivo</th>
+                <th>Upload</th><th>Download</th><th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>31/08/2025 16:40</td><td>31/08/2025 16:42</td><td>2m, 00s</td><td>Vivo 2G</td>
+                <td>User-Request</td><td>0.7 KB</td><td>0.4 KB</td><td>1.1 KB</td>
+              </tr>
+              <tr>
+                <td>31/08/2025 16:45</td><td>31/08/2025 16:47</td><td>2m, 00s</td><td>Vivo 2G</td>
+                <td>User-Request</td><td>0.7 KB</td><td>0.4 KB</td><td>1.1 KB</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Checklist visual -->
+    <div class="flex-row">
+      <div class="flex-col">
+        <div class="card p-3 alert-normal">
+          <h5><i class="bi bi-check-circle"></i> Comportamento Normal</h5>
+          <ul>
+            <li>Sessões longas → sempre online.</li>
+            <li>Sessões curtas estáveis → modo economia ativado.</li>
+            <li>User/NAS-Request → encerramento esperado.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="flex-col">
+        <div class="card p-3 alert-problem">
+          <h5><i class="bi bi-exclamation-circle"></i> Possível Problema</h5>
+          <ul>
+            <li>Quedas constantes: Stale-Session, Lost-Carrier.</li>
+            <li>Sessões curtas sem padrão.</li>
+            <li>Consumo alto incoerente.</li>
+            <li>Idle-Timeout frequente → falha de firmware.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- O que mais analisar -->
+<div class="card p-4 mt-4">
+  <div class="card-header"><i class="bi bi-search"></i> O que mais analisar em uma linha M2M</div>
+  <div class="card-body">
+    <ol>
+      <li>
+        <strong>APN (Access Point Name)</strong><br>
+        Verifique se está usando sempre a APN correta (ex.: <code>bws.br</code>).
+        Conexão com APN diferente → possível fraude ou configuração errada.
+      </li>
+      <li>
+        <strong>Rede / Tecnologia</strong><br>
+        Checar se o chip está navegando em 2G, 3G ou 4G/LTE.
+        Se rastreador deveria estar em 4G, mas cai muito em 2G → sinal fraco ou cobertura ruim.
+      </li>
+      <li>
+        <strong>IP atribuído</strong><br>
+        Normalmente, IP privado (10.x.x.x). IP público ou inesperado → possível erro de APN.
+      </li>
+      <li>
+        <strong>Consumo de dados</strong><br>
+        Sessões M2M são leves (KB). Picos em MB → looping, firmware corrompido ou uso indevido do chip.
+      </li>
+      <li>
+        <strong>Periodicidade das conexões</strong><br>
+        Sessões coerentes com padrão do rastreador. Intervalos grandes → falha de equipamento ou sinal.
+      </li>
+      <li>
+        <strong>Motivo de término em excesso</strong><br>
+        <ul>
+          <li>User/NAS-Request constante → esperado.</li>
+          <li>Idle-Timeout constante → dispositivo não manda keep-alive.</li>
+          <li>Stale-Session/Lost-Carrier frequente → problema de rede ou sinal fraco.</li>
+        </ul>
+      </li>
+      <li>
+        <strong>Data/Hora</strong><br>
+        Conferir se os horários fazem sentido. Janelas sem sessão → alerta.
+      </li>
+    </ol>
+    <div class="alert alert-info mt-3">
+      <strong>Resumo prático:</strong><br>
+      Verificar APN, rede e IP → garante linha correta.<br>
+      Analisar duração da sessão + motivo de término → comportamento normal ou problema.<br>
+      Monitorar consumo de dados e periodicidade → detecta anomalias, looping ou fraude.
+    </div>
+  </div>
+</div>
+
+
+<!-- Termos Técnicos -->
+<div class="card p-4 mt-4">
+  <div class="card-header"><i class="bi bi-journal-text"></i> Termos Técnicos e Explicações</div>
+  <div class="card-body">
+
+    <!-- Explicação do SIM Toolkit -->
+    <div class="mb-4">
+      <h5><i class="bi bi-info-circle"></i> SIM Toolkit (STK)</h5>
+      <p>
+        O <strong>SIM Toolkit</strong> é um conjunto de comandos armazenado no chip SIM do dispositivo.
+        Ele permite que a operadora ou aplicativos executem funções diretamente no rastreador ou celular, como:
+      </p>
+      <ul>
+        <li>Enviar ou solicitar informações de rede.</li>
+        <li>Atualizar configurações de APN e perfil de dados.</li>
+        <li>Executar comandos remotos, como reset ou reautenticação.</li>
+      </ul>
+      <p>Em outras palavras, é a “inteligência do SIM” que controla a comunicação automática com a rede.</p>
+    </div>
+
+    <!-- Tabela de termos -->
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover align-middle">
+        <thead class="table-secondary">
+          <tr>
+            <th>Termo</th>
+            <th>Explicação</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>APN</td>
+            <td>Access Point Name. Nome que identifica a rede de dados do chip. Ex.: bws.br</td>
+          </tr>
+          <tr>
+            <td>User-Request</td>
+            <td>O próprio dispositivo solicitou o encerramento da sessão (2G/3G)</td>
+          </tr>
+          <tr>
+            <td>NAS-Request</td>
+            <td>Dispositivo LTE/4G solicitando encerramento de sessão via protocolo NAS</td>
+          </tr>
+          <tr>
+            <td>Idle-Timeout</td>
+            <td>Sessão encerrada por inatividade, sem tráfego</td>
+          </tr>
+          <tr>
+            <td>Stale-Session</td>
+            <td>Sessão “obsoleta” ou inválida, normalmente por perda de sinal</td>
+          </tr>
+          <tr>
+            <td>Operator-Request</td>
+            <td>Encerramento de sessão feito pela operadora</td>
+          </tr>
+          <tr>
+            <td>Lost-Carrier</td>
+            <td>Portadora (sinal de rádio) perdida, falha de cobertura</td>
+          </tr>
+          <tr>
+            <td>Admin-Reset</td>
+            <td>Reset administrativo remoto ou via operadora</td>
+          </tr>
+          <tr>
+            <td>Reauth-Failure</td>
+            <td>Falha de autenticação durante renovação de sessão (geralmente APN ou SIM Toolkit)</td>
+          </tr>
+          <tr>
+            <td>SIM Toolkit (STK)</td>
+            <td>Conjunto de comandos no SIM que controla funções do dispositivo e comunicação com a rede</td>
+          </tr>
+          <tr>
+            <td>Keep-Alive / Heartbeat</td>
+            <td>Pacotes periódicos enviados para manter a sessão ativa</td>
+          </tr>
+          <tr>
+            <td>2G / 3G / 4G / LTE</td>
+            <td>Tecnologias de rede celular utilizadas pelo dispositivo</td>
+          </tr>
+          <tr>
+            <td>Looping</td>
+            <td>Reenvio repetitivo de mensagens devido a erro de firmware ou configuração</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
